@@ -1,0 +1,6 @@
+{
+  "name": "Anshree Surveys",
+  "description": "A premium, AI-powered survey and rewards platform allowing users to earn points through various survey types.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
