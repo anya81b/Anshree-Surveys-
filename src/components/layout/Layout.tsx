@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { auth } from '../../lib/firebase';
+import { signOut } from 'firebase/auth';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -12,7 +14,8 @@ import {
   User,
   ShieldCheck,
   BarChart2,
-  Loader
+  Loader,
+  LogOut
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,7 +23,24 @@ import { useAuth } from '../AuthProvider';
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
   const { role, user, loading } = useAuth();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -108,17 +128,70 @@ export function Layout() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+            <div className="relative" ref={notifRef}>
+              <button 
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors focus:outline-none"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+              
+              <AnimatePresence>
+                {notifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50"
+                  >
+                    <div className="p-4 border-b border-slate-200">
+                      <h3 className="font-semibold text-slate-900">Notifications</h3>
+                    </div>
+                    <div className="p-8 text-center">
+                      <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-slate-900">No new notifications</p>
+                      <p className="text-xs text-slate-500 mt-1">We'll let you know when something arrives.</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 relative" ref={profileRef}>
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-slate-900">{user?.isAnonymous ? 'Guest' : user?.email}</p>
                 <p className="text-xs text-slate-500 capitalize">{role}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200 text-indigo-700">
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none"
+              >
                 <User className="w-5 h-5" />
-              </div>
+              </button>
+              
+              <AnimatePresence>
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50"
+                  >
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false);
+                          signOut(auth);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
